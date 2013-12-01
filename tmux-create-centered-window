@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# only works if called outside of an attached session
+#
+# optionally $1 is the target session, which will be created if need be,
+# defaults to epoch
+# optionally $2 is the centered window's width, defaults to 80
+# optionally $3 is the centered window's vertical margin, defaults to 5
+#
+# goal is a centered panel that is TARGET_WIDTH lines wide and has vertical margin of MARGIN_HEIGHT lines
+# from the top and bottom, where the panes are numbered:
+#  |2|
+# 1|3|5
+#  |4|
+# margin width (the width of pane 1 and 5) is the screen width minus the target
+# width minus the two seperators, divided by two
+
+SESSION="${1-$(date +%s)}"
+TARGET_WIDTH="${2-80}"
+MARGIN_HEIGHT="${3-6}"
+MARGIN_WIDTH="$((($(tput cols)-${TARGET_WIDTH}-2)/2))"
+
+# if the session exists, create a new window, else create a new (detached) session
+tmux has-session -t "${SESSION}" 2>/dev/null
+if [ "$?" -eq 0 ]; then
+  tmux detach-client
+  tmux new-window -t "${SESSION}"
+else
+  tmux new-session -s "${SESSION}" -d
+fi
+
+# split in three even-horizontal vertical panes and set the margin widths
+tmux split-window -h
+tmux split-window -h
+tmux resize-pane -t "${SESSION}:.1" -x "${MARGIN_WIDTH}"
+tmux resize-pane -t "${SESSION}:.3" -x "${MARGIN_WIDTH}"
+
+# split the middle pane in three horizontal panes and set the row heights
+tmux select-pane -t 2
+tmux split-window -v
+tmux split-window -v
+tmux resize-pane -t "${SESSION}:.2" -y "${MARGIN_HEIGHT}"
+tmux resize-pane -t "${SESSION}:.4" -y "${MARGIN_HEIGHT}"
+
+tmux select-pane -t 3
