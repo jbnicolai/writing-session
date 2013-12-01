@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# creates a writing session within tmux consisting of a centered 80 column vim
+# window with a vertical and horizontal black margin
+# all in in the vim and tmux sessions will be disabled
+
+# get the full qualified path to the source dir
+pushd $(dirname $0) > /dev/null
+P="$(pwd)"
+popd > /dev/null
+
+"${P}"/tmux-create-centered-window
+
+# hide the prompts in the bordering panes
+"${P}"/tmux-execute-for-each-pane "unset PROMPT_COMMAND"
+"${P}"/tmux-execute-for-each-pane "PS1='\e[0;30m$\e[0m'"
+"${P}"/tmux-execute-for-each-pane "clear"
+
+# start a vim session in the middle pane with a ui hiding config
+tmux select-pane -t ":.3"
+tmux send-keys "vim -u ${P}/writing-session.vim" Enter
+
+# source the ui hiding tmux config file
+tmux source-file "${P}"/writing-session.conf
+
+# attach the session
+tmux -2 attach
